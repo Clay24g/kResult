@@ -8,12 +8,10 @@ version = "1.0-SNAPSHOT"
 
 repositories {
     mavenCentral()
-    maven { setUrl("https://jitpack.io") }
 }
 
 dependencies {
     implementation(kotlin("stdlib-jdk8"))
-    implementation("com.github.User:Repo:Tag")
 
     testCompile("junit", "junit", "4.12")
 }
