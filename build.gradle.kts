@@ -1,6 +1,7 @@
 plugins {
     java
     kotlin("jvm") version "1.3.61"
+    maven
 }
 
 group = "com.claygillman.kresult"
