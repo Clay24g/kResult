@@ -1,18 +1,15 @@
+@file:Suppress("UNCHECKED_CAST")
+
 package com.claygillman.kresult
+
+import kotlin.contracts.ExperimentalContracts
+import kotlin.contracts.InvocationKind
+import kotlin.contracts.contract
 
 /**
  * Monad representation of either a value or failure.
  */
 sealed class Result<out A> {
-
-    /**
-     * Maps this result to another value via [f], then returns [B] wrapped in a [Result] object.
-     *
-     * If this result is a [Failure], then it will be immediately returned without executing [f].
-     *
-     * If [f] throws an exception, it will be caught and this method will return a [Failure].
-     */
-    abstract fun <B> map(f: (A) -> B): Result<B>
 
     /**
      * Maps this result to another result via [f], then returns it.
@@ -79,8 +76,6 @@ sealed class Result<out A> {
 
 class Failure<out A>(val exception: Throwable): Result<A>() {
 
-    override fun <B> map(f: (A) -> B): Result<B> = Failure(exception)
-
     override fun <B> flatMap(f: (A) -> Result<B>): Result<B> = Failure(exception)
 
     override fun mapFailure(exception: Throwable): Result<A> = Failure(exception)
@@ -91,12 +86,6 @@ class Failure<out A>(val exception: Throwable): Result<A>() {
 }
 
 class Success<out A>(val value: A): Result<A>() {
-
-    override fun <B> map(f: (A) -> B): Result<B> = try {
-        Success(f(value))
-    } catch (e: Exception) {
-        Failure(e)
-    }
 
     override fun <B> flatMap(f: (A) -> Result<B>): Result<B> = try {
         f(value)
@@ -109,6 +98,29 @@ class Success<out A>(val value: A): Result<A>() {
     override fun onSuccess(func: (A) -> Unit) = this.also { func(this.value) }
 
     override fun onFailure(func: (Throwable) -> Unit) = this
+}
+
+/**
+ * Maps this result to another value via [transform], then returns [B] wrapped in a [Result] object.
+ *
+ * If this result is a [Failure], then it will be immediately returned without executing [transform].
+ *
+ * If [transform] throws an exception, it will be caught and this method will return a [Failure].
+ */
+@ExperimentalContracts
+inline infix fun <A, B> Result<A>.map(transform: (A) -> B): Result<B> {
+    contract {
+        callsInPlace(transform, InvocationKind.AT_MOST_ONCE)
+    }
+
+    return when (this) {
+        is Success -> try {
+            Success(transform(value))
+        } catch (e: Exception) {
+            Failure<B>(e)
+        }
+        is Failure -> this as Result<B>
+    }
 }
 
 
